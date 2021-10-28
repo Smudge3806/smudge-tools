@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -e
+
+SUBJECT=$1
+TARGET=$2
+
+BAD_PARAMETER_EXIT_CODE=1
+BAD_SUBJECT_EXIT_CODE=2
+FAILED_TO_REMOVE_EXISTING_EXIT_CODE=3
+FAILED_TO_SYMLINK_EXIT_CODE=4
+
+if [ -z $SUBJECT ] || [ -z $TARGET ]; then
+    echo "Expected two parameters. Subject and Target";
+
+    exit $BAD_PARAMETER_EXIT_CODE;
+fi
+
+if [ ! -d $SUBJECT ]; then
+    echo "Expected Subject to be a directory";
+
+    exit $BAD_SUBJECT_EXIT_CODE;
+fi
+
+if [ -d $TARGET ]; then
+    trap 'catchRm $?' ERR
+    rm -rf $TARGET;
+fi
+
+trap 'catchLn $?' ERR
+ln -s $SUBJECT $TARGET
+
+if [ -L $TARGET ]; then
+    echo "$TARGET setup successful";
+
+    exit 0;
+else
+    echo "$TARGET setup failed";
+
+    exit $FAILED_TO_SYMLINK_EXIT_CODE;
+fi
+
+function catchRm()
+{
+    exit $FAILED_TO_REMOVE_EXISTING_EXIT_CODE;
+}
+
+function catchLn()
+{
+    exit $FAILED_TO_SYMLINK_EXIT_CODE;
+}
